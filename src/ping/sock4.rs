@@ -58,7 +58,7 @@ impl Sock4 {
 }
 
 async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
-    let mut pkt = [0u8; 1];
+    let mut pkt = [0u8; 128];
     loop {
         let (n, _) = sock.recv_from(&mut pkt).await?;
         let now = Instant::now();
