@@ -20,10 +20,10 @@ pub struct Sock6 {
 
 impl Sock6 {
     pub async fn new(bind: &Bind, state: Arc<State>) -> Result<Self> {
-        let raw = Type::raw();
+        let dgram = Type::dgram();
         let icmp6 = Protocol::icmpv6();
 
-        let sock = Arc::new(RawSocket::new(Domain::ipv6(), raw, Some(icmp6))?);
+        let sock = Arc::new(RawSocket::new(Domain::ipv6(), dgram, Some(icmp6))?);
         sock.bind(bind.sa6()).await?;
         let rx = sock.clone();
 

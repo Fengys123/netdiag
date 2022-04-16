@@ -22,10 +22,10 @@ pub struct Sock4 {
 
 impl Sock4 {
     pub async fn new(bind: &Bind, state: Arc<State>) -> Result<Self> {
-        let raw = Type::raw();
+        let dgram = Type::dgram();
         let icmp4 = Protocol::icmpv4();
 
-        let sock = Arc::new(RawSocket::new(Domain::ipv4(), raw, Some(icmp4))?);
+        let sock = Arc::new(RawSocket::new(Domain::ipv4(), dgram, Some(icmp4))?);
         sock.bind(bind.sa4()).await?;
         let rx = sock.clone();
 
@@ -58,13 +58,27 @@ impl Sock4 {
 }
 
 async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
+    let mut pkt = [0u8; 1];
+    loop {
+        let (n, _) = sock.recv_from(&mut pkt).await?;
+        let now = Instant::now();
+        if let IcmpV4Packet::EchoReply(echo) = IcmpV4Packet::try_from(&pkt[0..n])? {
+            if let Ok(token) = echo.data.try_into() {
+                if let Some(tx) = state.remove(&token) {
+                    let _ = tx.send(now);
+                }
+            }
+        }
+    }
+}
+
+#[allow(dead_code)]
+async fn recv_with_ip_header(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
     let mut pkt = [0u8; 128];
     loop {
         let (n, _) = sock.recv_from(&mut pkt).await?;
-
         let now = Instant::now();
         let pkt = Ipv4Header::from_slice(&pkt[..n])?;
-
         if let (
             Ipv4Header {
                 protocol: ICMP4, ..
