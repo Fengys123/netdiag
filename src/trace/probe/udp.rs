@@ -1,8 +1,8 @@
-use std::io::Cursor;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
+use super::Probe;
 use anyhow::Result;
 use etherparse::*;
-use super::Probe;
+use std::io::Cursor;
+use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
 
 #[derive(Debug)]
 pub struct UDPv4 {

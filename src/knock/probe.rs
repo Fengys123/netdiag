@@ -1,7 +1,7 @@
-use std::io::Cursor;
-use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 use anyhow::{anyhow, Result};
 use etherparse::*;
+use std::io::Cursor;
+use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
 #[derive(Debug)]
 pub enum Probe {
@@ -25,14 +25,14 @@ pub struct ProbeV6 {
 
 impl Probe {
     pub fn new(src: SocketAddr, dst: SocketAddr, seq: u32) -> Result<Self> {
-        let probe4  = |src, dst| Probe::V4(ProbeV4 { src, dst, seq });
-        let probe6  = |src, dst| Probe::V6(ProbeV6 { src, dst, seq });
+        let probe4 = |src, dst| Probe::V4(ProbeV4 { src, dst, seq });
+        let probe6 = |src, dst| Probe::V6(ProbeV6 { src, dst, seq });
         let invalid = || anyhow!("mixed IPv4 and IPv6 addresses");
 
         match (src, dst) {
             (SocketAddr::V4(src), SocketAddr::V4(dst)) => Ok(probe4(src, dst)),
             (SocketAddr::V6(src), SocketAddr::V6(dst)) => Ok(probe6(src, dst)),
-            _                                          => Err(invalid()),
+            _ => Err(invalid()),
         }
     }
 
@@ -53,7 +53,9 @@ impl ProbeV4 {
         let win = 5840;
 
         let pkt = PacketBuilder::ipv4(src, dst, 64);
-        let pkt = pkt.tcp(self.src.port(), self.dst.port(), self.seq, win).syn();
+        let pkt = pkt
+            .tcp(self.src.port(), self.dst.port(), self.seq, win)
+            .syn();
 
         let n = pkt.size(0);
         pkt.write(&mut buf, &[])?;

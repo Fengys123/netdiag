@@ -1,14 +1,14 @@
-use std::collections::HashMap;
+use super::probe::{Key, Probes, Protocol, PORT_MAX, PORT_MIN};
+use super::reply::Echo;
+use parking_lot::Mutex;
+use rand::distributions::Uniform;
+use rand::prelude::*;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::net::IpAddr;
 use std::ops::Deref;
-use rand::prelude::*;
-use rand::distributions::Uniform;
-use parking_lot::Mutex;
-use tokio::sync::broadcast::{Receiver, Sender, channel};
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 use tokio::task;
-use super::probe::{Key, Probes, Protocol, PORT_MIN, PORT_MAX};
-use super::reply::Echo;
 
 #[derive(Debug)]
 pub struct State {
@@ -18,7 +18,7 @@ pub struct State {
 
 #[derive(Debug)]
 pub struct Lease<'s> {
-    state:  &'s State,
+    state: &'s State,
     probes: Probes,
 }
 
@@ -34,9 +34,9 @@ impl State {
         let (tx, _) = channel(10);
 
         loop {
-            let value  = thread_rng().sample(self.range);
+            let value = thread_rng().sample(self.range);
             let probes = Probes::new(proto, src, dst, value);
-            let key    = probes.key();
+            let key = probes.key();
 
             if let Entry::Vacant(e) = self.state.lock().entry(key) {
                 e.insert(tx);
@@ -72,7 +72,7 @@ impl Deref for Lease<'_> {
     fn deref(&self) -> &Self::Target {
         &self.probes
     }
- }
+}
 
 impl Drop for Lease<'_> {
     fn drop(&mut self) {

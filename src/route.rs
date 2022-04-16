@@ -1,14 +1,14 @@
-use std::convert::TryInto;
-use std::io::Error;
-use std::mem::{zeroed, size_of};
-use std::net::{IpAddr, SocketAddr};
-use std::os::unix::io::AsRawFd;
 use anyhow::Result;
 use libc::{self, sockaddr};
+use std::convert::TryInto;
+use std::io::Error;
+use std::mem::{size_of, zeroed};
+use std::net::{IpAddr, SocketAddr};
+use std::os::unix::io::AsRawFd;
 use tokio::net::UdpSocket;
 
 pub struct RouteSocket {
-    sock: UdpSocket
+    sock: UdpSocket,
 }
 
 impl RouteSocket {
@@ -28,12 +28,12 @@ impl RouteSocket {
 
 fn reset(sock: &UdpSocket) -> Result<()> {
     unsafe {
-        let fd   = sock.as_raw_fd();
+        let fd = sock.as_raw_fd();
         let addr = zeroed();
-        let len  = size_of::<sockaddr>().try_into()?;
+        let len = size_of::<sockaddr>().try_into()?;
         match libc::connect(fd, &addr, len) {
             0 => Ok(()),
-            _ => Err(Error::last_os_error().into())
+            _ => Err(Error::last_os_error().into()),
         }
     }
 }

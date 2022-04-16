@@ -1,7 +1,7 @@
 [package]
 name        = "netdiag"
 version     = "0.3.0"
-edition     = "2018"
+edition     = "2021"
 
 authors     = ["Will <will@kentik.com>"]
 description = "Network diagnostics"
@@ -22,13 +22,9 @@ socket2     = "0.4.4"
 
 [dependencies.tokio]
 version     = "1.17.0"
-features    = ["net"]
-default-features = false
+features    = ["full"]
 
 [dev-dependencies]
 env_logger  = "0.9.0"
 gumdrop     = "0.8.1"
 
-[dev-dependencies.tokio]
-version     = "1.17.0"
-features    = ["full"]

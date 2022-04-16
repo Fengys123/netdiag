@@ -1,9 +1,9 @@
+use super::Probe;
+use anyhow::Result;
+use etherparse::*;
 use std::cmp::min;
 use std::io::Cursor;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddrV4, SocketAddrV6};
-use anyhow::Result;
-use etherparse::*;
-use super::Probe;
 
 #[derive(Debug)]
 pub struct TCPv4 {
@@ -48,7 +48,9 @@ impl TCPv4 {
         let win = 5840;
 
         let pkt = PacketBuilder::ipv4(src, dst, ttl);
-        let pkt = pkt.tcp(self.src.port(), self.dst.port(), self.seq, win).syn();
+        let pkt = pkt
+            .tcp(self.src.port(), self.dst.port(), self.seq, win)
+            .syn();
 
         let n = pkt.size(0);
         pkt.write(&mut buf, &[])?;

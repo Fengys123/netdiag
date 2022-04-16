@@ -1,30 +1,30 @@
-use std::io::IoSliceMut;
-use std::net::{IpAddr, SocketAddr};
-use std::time::Instant;
-use std::sync::Arc;
+use super::state::State;
+use super::{probe::ProbeV6, reply::Reply};
+use crate::{Bind, RouteSocket};
 use anyhow::Result;
 use etherparse::TcpHeader;
-use libc::{IPPROTO_TCP, c_int};
+use libc::{c_int, IPPROTO_TCP};
 use log::{debug, error};
 use raw_socket::tokio::prelude::*;
+use std::io::IoSliceMut;
+use std::net::{IpAddr, SocketAddr};
+use std::sync::Arc;
+use std::time::Instant;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
-use crate::{Bind, RouteSocket};
-use super::{probe::ProbeV6, reply::Reply};
-use super::state::State;
 
 pub struct Sock6 {
-    sock:  Mutex<Arc<RawSocket>>,
-    recv:  JoinHandle<()>,
+    sock: Mutex<Arc<RawSocket>>,
+    recv: JoinHandle<()>,
     route: Mutex<RouteSocket>,
 }
 
 impl Sock6 {
     pub async fn new(bind: &Bind, state: Arc<State>) -> Result<Self> {
         let ipv6 = Domain::ipv6();
-        let tcp  = Protocol::from(IPPROTO_TCP);
+        let tcp = Protocol::from(IPPROTO_TCP);
 
-        let sock  = Arc::new(RawSocket::new(ipv6, Type::raw(), Some(tcp))?);
+        let sock = Arc::new(RawSocket::new(ipv6, Type::raw(), Some(tcp))?);
         let route = RouteSocket::new(bind.sa6()).await?;
 
         sock.bind(bind.sa6()).await?;
@@ -43,8 +43,8 @@ impl Sock6 {
         });
 
         Ok(Self {
-            sock:  Mutex::new(sock),
-            recv:  recv,
+            sock: Mutex::new(sock),
+            recv: recv,
             route: Mutex::new(route),
         })
     }
@@ -79,11 +79,9 @@ async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
 
         let now = Instant::now();
         let pkt = TcpHeader::from_slice(&pkt[..n]);
-        let dst = CMsg::decode(&ctl).find_map(|msg| {
-            match msg {
-                CMsg::Ipv6PktInfo(info) => Some(info.addr().into()),
-                _                       => None,
-            }
+        let dst = CMsg::decode(&ctl).find_map(|msg| match msg {
+            CMsg::Ipv6PktInfo(info) => Some(info.addr().into()),
+            _ => None,
         });
 
         if let (Ok((head, _tail)), Some(dst)) = (pkt, dst) {

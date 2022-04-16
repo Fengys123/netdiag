@@ -1,33 +1,33 @@
-use std::convert::TryFrom;
-use std::net::{IpAddr, SocketAddr};
-use std::time::Instant;
-use std::sync::Arc;
-use anyhow::Result;
-use etherparse::{IpNumber, Ipv4Header, TcpHeaderSlice};
-use libc::{IPPROTO_TCP, IPPROTO_UDP, c_int};
-use log::{debug, error};
-use raw_socket::tokio::prelude::*;
-use tokio::sync::Mutex;
-use crate::{Bind, RouteSocket};
 use super::probe::{Key, Probe};
 use super::reply::Echo;
 use super::state::State;
+use crate::{Bind, RouteSocket};
+use anyhow::Result;
+use etherparse::{IpNumber, Ipv4Header, TcpHeaderSlice};
+use libc::{c_int, IPPROTO_TCP, IPPROTO_UDP};
+use log::{debug, error};
+use raw_socket::tokio::prelude::*;
+use std::convert::TryFrom;
+use std::net::{IpAddr, SocketAddr};
+use std::sync::Arc;
+use std::time::Instant;
+use tokio::sync::Mutex;
 
 pub struct Sock4 {
-    icmp:  Mutex<Arc<RawSocket>>,
-    tcp:   Mutex<Arc<RawSocket>>,
-    udp:   Mutex<Arc<RawSocket>>,
+    icmp: Mutex<Arc<RawSocket>>,
+    tcp: Mutex<Arc<RawSocket>>,
+    udp: Mutex<Arc<RawSocket>>,
     route: Mutex<RouteSocket>,
 }
 
 impl Sock4 {
     pub async fn new(bind: &Bind, icmp: Arc<RawSocket>, state: Arc<State>) -> Result<Self> {
-        let ipv4  = Domain::ipv4();
-        let tcp   = Protocol::from(IPPROTO_TCP);
-        let udp   = Protocol::from(IPPROTO_UDP);
+        let ipv4 = Domain::ipv4();
+        let tcp = Protocol::from(IPPROTO_TCP);
+        let udp = Protocol::from(IPPROTO_UDP);
 
-        let tcp   = Arc::new(RawSocket::new(ipv4, Type::raw(), Some(tcp))?);
-        let udp   = Arc::new(RawSocket::new(ipv4, Type::raw(), Some(udp))?);
+        let tcp = Arc::new(RawSocket::new(ipv4, Type::raw(), Some(tcp))?);
+        let udp = Arc::new(RawSocket::new(ipv4, Type::raw(), Some(udp))?);
         let route = RouteSocket::new(bind.sa4()).await?;
 
         tcp.bind(bind.sa4()).await?;
@@ -47,9 +47,9 @@ impl Sock4 {
         });
 
         Ok(Self {
-            icmp:  Mutex::new(icmp),
-            tcp:   Mutex::new(tcp),
-            udp:   Mutex::new(udp),
+            icmp: Mutex::new(icmp),
+            tcp: Mutex::new(tcp),
+            udp: Mutex::new(udp),
             route: Mutex::new(route),
         })
     }
@@ -68,9 +68,11 @@ impl Sock4 {
 
         match probe {
             Probe::ICMP(..) => self.icmp.lock().await,
-            Probe::TCP(..)  => self.tcp.lock().await,
-            Probe::UDP(..)  => self.udp.lock().await,
-        }.send_to(pkt, &dst).await?;
+            Probe::TCP(..) => self.tcp.lock().await,
+            Probe::UDP(..) => self.udp.lock().await,
+        }
+        .send_to(pkt, &dst)
+        .await?;
 
         Ok(Instant::now())
     }

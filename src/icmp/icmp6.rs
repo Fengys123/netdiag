@@ -1,13 +1,13 @@
-use std::convert::{TryFrom, TryInto};
-use anyhow::{anyhow, Error};
 use super::echo::Echo;
+use anyhow::{anyhow, Error};
+use std::convert::{TryFrom, TryInto};
 
 pub const HEADER_SIZE: usize = 8;
 
-pub const UNREACHABLE:   u8 = 1;
+pub const UNREACHABLE: u8 = 1;
 pub const TIME_EXCEEDED: u8 = 3;
-pub const ECHO_REQUEST:  u8 = 128;
-pub const ECHO_REPLY:    u8 = 129;
+pub const ECHO_REQUEST: u8 = 128;
+pub const ECHO_REPLY: u8 = 129;
 
 #[derive(Debug)]
 pub enum IcmpV6Packet<'a> {
@@ -39,12 +39,12 @@ impl<'a> TryFrom<&'a [u8]> for IcmpV6Packet<'a> {
         let rest = &slice[4..];
 
         Ok(match (kind, code) {
-            (UNREACHABLE,   _) => IcmpV6Packet::Unreachable((code, rest).try_into()?),
+            (UNREACHABLE, _) => IcmpV6Packet::Unreachable((code, rest).try_into()?),
             (TIME_EXCEEDED, 0) => IcmpV6Packet::HopLimitExceeded(&rest[4..]),
             (TIME_EXCEEDED, 1) => IcmpV6Packet::ReassemblyTimeExceeded(&rest[4..]),
-            (ECHO_REQUEST,  0) => IcmpV6Packet::EchoRequest(rest.try_into()?),
-            (ECHO_REPLY,    0) => IcmpV6Packet::EchoReply(rest.try_into()?),
-            _                  => IcmpV6Packet::Other(kind, code, rest),
+            (ECHO_REQUEST, 0) => IcmpV6Packet::EchoRequest(rest.try_into()?),
+            (ECHO_REPLY, 0) => IcmpV6Packet::EchoReply(rest.try_into()?),
+            _ => IcmpV6Packet::Other(kind, code, rest),
         })
     }
 }

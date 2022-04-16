@@ -1,12 +1,12 @@
-use std::convert::{TryFrom, TryInto};
-use anyhow::{anyhow, Error};
 use super::echo::Echo;
+use anyhow::{anyhow, Error};
+use std::convert::{TryFrom, TryInto};
 
 pub const HEADER_SIZE: usize = 8;
 
-pub const ECHO_REPLY:    u8 = 0;
-pub const UNREACHABLE:   u8 = 3;
-pub const ECHO_REQUEST:  u8 = 8;
+pub const ECHO_REPLY: u8 = 0;
+pub const UNREACHABLE: u8 = 3;
+pub const ECHO_REQUEST: u8 = 8;
 pub const TIME_EXCEEDED: u8 = 11;
 
 #[derive(Debug)]
@@ -40,15 +40,14 @@ impl<'a> TryFrom<&'a [u8]> for IcmpV4Packet<'a> {
         let rest = &slice[4..];
 
         Ok(match (kind, code) {
-            (ECHO_REPLY,    0) => IcmpV4Packet::EchoReply(rest.try_into()?),
-            (UNREACHABLE,   _) => IcmpV4Packet::Unreachable((code, rest).try_into()?),
-            (ECHO_REQUEST,  0) => IcmpV4Packet::EchoRequest(rest.try_into()?),
+            (ECHO_REPLY, 0) => IcmpV4Packet::EchoReply(rest.try_into()?),
+            (UNREACHABLE, _) => IcmpV4Packet::Unreachable((code, rest).try_into()?),
+            (ECHO_REQUEST, 0) => IcmpV4Packet::EchoRequest(rest.try_into()?),
             (TIME_EXCEEDED, _) => IcmpV4Packet::TimeExceeded(&rest[4..]),
-            _                  => IcmpV4Packet::Other(kind, code, rest),
+            _ => IcmpV4Packet::Other(kind, code, rest),
         })
     }
 }
-
 
 impl<'a> TryFrom<(u8, &'a [u8])> for Unreachable<'a> {
     type Error = Error;
@@ -71,8 +70,8 @@ pub fn checksum(pkt: &[u8]) -> u16 {
     for chunk in pkt.chunks(2) {
         let word = match chunk {
             [x, y] => u16::from_be_bytes([*x, *y]),
-            [x]    => u16::from_be_bytes([*x, 0]),
-            _      => unreachable!(),
+            [x] => u16::from_be_bytes([*x, 0]),
+            _ => unreachable!(),
         } as u32;
         sum = sum.wrapping_add(word);
     }

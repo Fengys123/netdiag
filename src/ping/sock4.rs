@@ -1,19 +1,19 @@
+use super::probe::Probe;
+use super::state::State;
+use crate::icmp::icmp4::checksum;
+use crate::icmp::IcmpV4Packet;
+use crate::Bind;
+use anyhow::Result;
+use etherparse::{IpNumber, Ipv4Header};
+use log::{debug, error};
+use raw_socket::tokio::RawSocket;
+use raw_socket::{Domain, Protocol, Type};
 use std::convert::{TryFrom, TryInto};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Instant;
-use anyhow::Result;
-use etherparse::{IpNumber, Ipv4Header};
-use log::{debug, error};
-use raw_socket::{Domain, Type, Protocol};
-use raw_socket::tokio::RawSocket;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
-use crate::Bind;
-use crate::icmp::IcmpV4Packet;
-use crate::icmp::icmp4::checksum;
-use super::probe::Probe;
-use super::state::State;
 
 pub struct Sock4 {
     recv: JoinHandle<()>,
@@ -22,7 +22,7 @@ pub struct Sock4 {
 
 impl Sock4 {
     pub async fn new(bind: &Bind, state: Arc<State>) -> Result<Self> {
-        let raw   = Type::raw();
+        let raw = Type::raw();
         let icmp4 = Protocol::icmpv4();
 
         let sock = Arc::new(RawSocket::new(Domain::ipv4(), raw, Some(icmp4))?);
@@ -36,7 +36,10 @@ impl Sock4 {
             }
         });
 
-        Ok(Self { recv, sock: Mutex::new(sock) })
+        Ok(Self {
+            recv,
+            sock: Mutex::new(sock),
+        })
     }
 
     pub async fn send(&self, probe: &Probe) -> Result<Instant> {
@@ -62,7 +65,13 @@ async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
         let now = Instant::now();
         let pkt = Ipv4Header::from_slice(&pkt[..n])?;
 
-        if let (Ipv4Header { protocol: ICMP4, .. }, tail) = pkt {
+        if let (
+            Ipv4Header {
+                protocol: ICMP4, ..
+            },
+            tail,
+        ) = pkt
+        {
             if let IcmpV4Packet::EchoReply(echo) = IcmpV4Packet::try_from(tail)? {
                 if let Ok(token) = echo.data.try_into() {
                     if let Some(tx) = state.remove(&token) {

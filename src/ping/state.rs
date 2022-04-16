@@ -1,19 +1,19 @@
+use super::probe::Token;
+use futures::ready;
+use parking_lot::Mutex;
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use std::time::Instant;
-use futures::ready;
-use parking_lot::Mutex;
-use tokio::sync::oneshot::{Receiver, Sender, channel, error::RecvError};
-use super::probe::Token;
+use tokio::sync::oneshot::{channel, error::RecvError, Receiver, Sender};
 
 #[derive(Default)]
 pub struct State(Mutex<HashMap<Token, Sender<Instant>>>);
 
 pub struct Lease<'s> {
     state: &'s State,
-    rx:    Receiver<Instant>,
+    rx: Receiver<Instant>,
     token: Token,
 }
 
@@ -47,7 +47,7 @@ impl Future for Lease<'_> {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match ready!(Pin::new(&mut self.rx).poll(cx)) {
             Ok(time) => Poll::Ready(Ok(time)),
-            Err(e)   => Poll::Ready(Err(e)),
+            Err(e) => Poll::Ready(Err(e)),
         }
     }
 }

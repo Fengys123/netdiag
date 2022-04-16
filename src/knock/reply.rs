@@ -1,5 +1,5 @@
-use std::time::Instant;
 use etherparse::TcpHeader;
+use std::time::Instant;
 
 #[derive(Debug)]
 pub struct Reply {

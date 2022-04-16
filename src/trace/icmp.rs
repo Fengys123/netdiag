@@ -1,19 +1,19 @@
-use std::convert::TryFrom;
-use std::future::Future;
-use std::io::IoSliceMut;
-use std::sync::Arc;
-use std::time::Instant;
+use super::probe::{Key, Probe};
+use super::reply::Echo;
+use super::state::State;
+use crate::icmp::{icmp4, icmp6, IcmpV4Packet, IcmpV6Packet};
+use crate::Bind;
 use anyhow::Result;
 use etherparse::{IpNumber, Ipv4Header};
 use libc::c_int;
 use log::{debug, error};
 use raw_socket::tokio::prelude::*;
+use std::convert::TryFrom;
+use std::future::Future;
+use std::io::IoSliceMut;
+use std::sync::Arc;
+use std::time::Instant;
 use tokio::task::JoinHandle;
-use crate::Bind;
-use crate::icmp::{icmp4, icmp6, IcmpV4Packet, IcmpV6Packet};
-use super::probe::{Key, Probe};
-use super::reply::Echo;
-use super::state::State;
 
 pub struct Icmp {
     pub icmp4: Arc<RawSocket>,
@@ -24,8 +24,8 @@ pub struct Icmp {
 
 impl Icmp {
     pub async fn exec(bind: &Bind, state: &Arc<State>) -> Result<Self> {
-        let ipv4  = Domain::ipv4();
-        let ipv6  = Domain::ipv6();
+        let ipv4 = Domain::ipv4();
+        let ipv6 = Domain::ipv6();
         let icmp4 = Protocol::icmpv4();
         let icmp6 = Protocol::icmpv6();
 
@@ -36,13 +36,18 @@ impl Icmp {
         icmp6.bind(bind.sa6()).await?;
 
         let enable: c_int = 1;
-        icmp4.set_sockopt(Level::IPV4, Name::IPV4_HDRINCL,     &enable)?;
+        icmp4.set_sockopt(Level::IPV4, Name::IPV4_HDRINCL, &enable)?;
         icmp6.set_sockopt(Level::IPV6, Name::IPV6_RECVPKTINFO, &enable)?;
 
         let recv4 = spawn("recv4", recv4(icmp4.clone(), state.clone()));
         let recv6 = spawn("recv6", recv6(icmp6.clone(), state.clone()));
 
-        Ok(Self { icmp4, icmp6, recv4, recv6 })
+        Ok(Self {
+            icmp4,
+            icmp6,
+            recv4,
+            recv6,
+        })
     }
 }
 
@@ -65,10 +70,10 @@ async fn recv4(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
                 }
             } else if let IcmpV4Packet::Unreachable(what) = icmp {
                 let pkt = match what {
-                    icmp4::Unreachable::Net(pkt)      => pkt,
-                    icmp4::Unreachable::Host(pkt)     => pkt,
+                    icmp4::Unreachable::Net(pkt) => pkt,
+                    icmp4::Unreachable::Host(pkt) => pkt,
                     icmp4::Unreachable::Protocol(pkt) => pkt,
-                    icmp4::Unreachable::Port(pkt)     => pkt,
+                    icmp4::Unreachable::Port(pkt) => pkt,
                     icmp4::Unreachable::Other(_, pkt) => pkt,
                 };
 
@@ -109,8 +114,8 @@ async fn recv6(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
             }
         } else if let IcmpV6Packet::Unreachable(what) = pkt {
             let pkt = match what {
-                icmp6::Unreachable::Address(pkt)  => pkt,
-                icmp6::Unreachable::Port(pkt)     => pkt,
+                icmp6::Unreachable::Address(pkt) => pkt,
+                icmp6::Unreachable::Port(pkt) => pkt,
                 icmp6::Unreachable::Other(_, pkt) => pkt,
             };
 
@@ -120,11 +125,9 @@ async fn recv6(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
                 }
             }
         } else if let IcmpV6Packet::EchoReply(echo) = pkt {
-            let dst = CMsg::decode(&ctl).find_map(|msg| {
-                match msg {
-                    CMsg::Ipv6PktInfo(info) => Some(info.addr()),
-                    _                       => None,
-                }
+            let dst = CMsg::decode(&ctl).find_map(|msg| match msg {
+                CMsg::Ipv6PktInfo(info) => Some(info.addr()),
+                _ => None,
             });
 
             if let Some(dst) = dst {
@@ -139,7 +142,10 @@ async fn recv6(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
     }
 }
 
-fn spawn<F: Future<Output = Result<()>> + Send + 'static>(name: &'static str, future: F) -> JoinHandle<()> {
+fn spawn<F: Future<Output = Result<()>> + Send + 'static>(
+    name: &'static str,
+    future: F,
+) -> JoinHandle<()> {
     tokio::spawn(async move {
         match future.await {
             Ok(()) => debug!("{} finished", name),

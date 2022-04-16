@@ -1,16 +1,16 @@
-use std::collections::HashMap;
+use super::reply::Reply;
+use futures::ready;
+use parking_lot::Mutex;
+use rand::distributions::Uniform;
+use rand::prelude::*;
 use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 use std::future::Future;
 use std::net::{IpAddr, SocketAddr};
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use futures::ready;
-use rand::prelude::*;
-use rand::distributions::Uniform;
-use parking_lot::Mutex;
-use tokio::sync::oneshot::{Sender, Receiver, channel, error::RecvError};
+use tokio::sync::oneshot::{channel, error::RecvError, Receiver, Sender};
 use tokio::task;
-use super::reply::Reply;
 
 const PORT_MIN: u16 = 33434;
 const PORT_MAX: u16 = 65407;
@@ -27,9 +27,9 @@ struct Key(SocketAddr, SocketAddr);
 #[derive(Debug)]
 pub struct Lease<'s> {
     state: &'s State,
-    rx:    Receiver<Reply>,
-    src:   SocketAddr,
-    dst:   SocketAddr,
+    rx: Receiver<Reply>,
+    src: SocketAddr,
+    dst: SocketAddr,
 }
 
 impl State {
@@ -45,11 +45,16 @@ impl State {
 
         loop {
             let port = thread_rng().sample(self.range);
-            let src  = SocketAddr::new(src, port);
-            let key  = Key(src, dst);
+            let src = SocketAddr::new(src, port);
+            let key = Key(src, dst);
 
             if let Entry::Vacant(e) = self.state.lock().entry(key) {
-                let lease = Lease { state: self, rx, src, dst };
+                let lease = Lease {
+                    state: self,
+                    rx,
+                    src,
+                    dst,
+                };
                 e.insert(tx);
                 return lease;
             }
@@ -81,7 +86,7 @@ impl Future for Lease<'_> {
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match ready!(Pin::new(&mut self.rx).poll(cx)) {
             Ok(reply) => Poll::Ready(Ok(reply)),
-            Err(e)    => Poll::Ready(Err(e)),
+            Err(e) => Poll::Ready(Err(e)),
         }
     }
 }

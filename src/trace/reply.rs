@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 #[derive(Debug)]
 pub enum Node {
     Node(u8, IpAddr, Duration, bool),
-    None(u8)
+    None(u8),
 }
 
 #[derive(Clone, Debug)]

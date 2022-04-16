@@ -1,15 +1,15 @@
+use crate::icmp::{icmp4, icmp6};
+use anyhow::{anyhow, Result};
+use rand::random;
 use std::array::TryFromSliceError;
 use std::convert::{TryFrom, TryInto};
 use std::net::IpAddr;
-use anyhow::{anyhow, Result};
-use rand::random;
-use crate::icmp::{icmp4, icmp6};
 
 #[derive(Debug)]
 pub struct Probe {
-    pub addr:  IpAddr,
-    pub id:    u16,
-    pub seq:   u16,
+    pub addr: IpAddr,
+    pub id: u16,
+    pub seq: u16,
     pub token: Token,
 }
 
@@ -19,7 +19,12 @@ pub struct Token([u8; 16]);
 impl Probe {
     pub fn new(addr: IpAddr, id: u16, seq: u16) -> Self {
         let token = Token(random());
-        Self { addr, id, seq, token }
+        Self {
+            addr,
+            id,
+            seq,
+            token,
+        }
     }
 
     pub fn encode<'a>(&self, buf: &'a mut [u8]) -> Result<&'a mut [u8]> {

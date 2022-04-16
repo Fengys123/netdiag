@@ -1,8 +1,8 @@
-use std::convert::TryFrom;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use super::{ICMPv4, ICMPv6, TCPv4, TCPv6, UDPv4, UDPv6};
 use anyhow::{anyhow, Error, Result};
 use etherparse::{IpNumber, Ipv4Header, Ipv6Header};
-use super::{ICMPv4, ICMPv6, TCPv4, TCPv6, UDPv4, UDPv6};
+use std::convert::TryFrom;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 
 #[derive(Debug)]
 pub enum Probe {
@@ -29,6 +29,7 @@ pub enum UDP {
     V6(UDPv6),
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone, Debug)]
 pub enum Protocol {
     ICMP,
@@ -39,14 +40,15 @@ pub enum Protocol {
 #[derive(Debug)]
 pub struct Probes {
     proto: Protocol,
-    src:   SocketAddr,
-    dst:   IpAddr,
+    src: SocketAddr,
+    dst: IpAddr,
     value: u16,
 }
 
 pub const PORT_MIN: u16 = 33434;
 pub const PORT_MAX: u16 = 65407;
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum Key {
     ICMP(IpAddr, IpAddr, u16),
@@ -59,8 +61,8 @@ impl Probe {
         let (head, tail) = Ipv4Header::from_slice(pkt)?;
         match head.protocol {
             ICMP4 => Ok(ICMPv4::decode(head, tail)?.key()),
-            TCP   => Ok(TCPv4::decode(head, tail)?.key()),
-            UDP   => Ok(UDPv4::decode(head, tail)?.key()),
+            TCP => Ok(TCPv4::decode(head, tail)?.key()),
+            UDP => Ok(UDPv4::decode(head, tail)?.key()),
             other => Err(anyhow!("unsupported protocol: {}", other)),
         }
     }
@@ -69,8 +71,8 @@ impl Probe {
         let (head, tail) = Ipv6Header::from_slice(pkt)?;
         match head.next_header {
             ICMP6 => Ok(ICMPv6::decode(head, tail)?.key()),
-            TCP   => Ok(TCPv6::decode(head, tail)?.key()),
-            UDP   => Ok(UDPv6::decode(head, tail)?.key()),
+            TCP => Ok(TCPv6::decode(head, tail)?.key()),
+            UDP => Ok(UDPv6::decode(head, tail)?.key()),
             other => Err(anyhow!("unsupported protocol: {}", other)),
         }
     }
@@ -79,10 +81,10 @@ impl Probe {
         match self {
             Self::ICMP(ICMP::V4(v4)) => v4.encode(buf, ttl),
             Self::ICMP(ICMP::V6(v6)) => v6.encode(buf),
-            Self::TCP(TCP::V4(v4))   => v4.encode(buf, ttl),
-            Self::TCP(TCP::V6(v6))   => v6.encode(buf),
-            Self::UDP(UDP::V4(v4))   => v4.encode(buf, ttl),
-            Self::UDP(UDP::V6(v6))   => v6.encode(buf),
+            Self::TCP(TCP::V4(v4)) => v4.encode(buf, ttl),
+            Self::TCP(TCP::V6(v6)) => v6.encode(buf),
+            Self::UDP(UDP::V4(v4)) => v4.encode(buf, ttl),
+            Self::UDP(UDP::V6(v6)) => v6.encode(buf),
         }
     }
 
@@ -90,10 +92,10 @@ impl Probe {
         match self {
             Self::ICMP(ICMP::V4(v4)) => SocketAddr::new(v4.dst.into(), 0),
             Self::ICMP(ICMP::V6(v6)) => SocketAddr::new(v6.dst.into(), 0),
-            Self::TCP(TCP::V4(v4))   => v4.dst.into(),
-            Self::TCP(TCP::V6(v6))   => v6.dst.into(),
-            Self::UDP(UDP::V4(v4))   => v4.dst.into(),
-            Self::UDP(UDP::V6(v6))   => v6.dst.into(),
+            Self::TCP(TCP::V4(v4)) => v4.dst.into(),
+            Self::TCP(TCP::V6(v6)) => v6.dst.into(),
+            Self::UDP(UDP::V4(v4)) => v4.dst.into(),
+            Self::UDP(UDP::V6(v6)) => v6.dst.into(),
         }
     }
 
@@ -101,10 +103,10 @@ impl Probe {
         match self {
             Self::ICMP(ICMP::V4(v4)) => Key::ICMP(v4.src.into(), IpAddr::from(v4.dst), v4.id),
             Self::ICMP(ICMP::V6(v6)) => Key::ICMP(v6.src.into(), IpAddr::from(v6.dst), v6.id),
-            Self::TCP(TCP::V4(v4))   => Key::TCP(v4.src.into(), IpAddr::from(*v4.dst.ip())),
-            Self::TCP(TCP::V6(v6))   => Key::TCP(v6.src.into(), IpAddr::from(*v6.dst.ip())),
-            Self::UDP(UDP::V4(v4))   => Key::UDP(v4.src.into(), IpAddr::from(*v4.dst.ip())),
-            Self::UDP(UDP::V6(v6))   => Key::UDP(v6.src.into(), IpAddr::from(*v6.dst.ip())),
+            Self::TCP(TCP::V4(v4)) => Key::TCP(v4.src.into(), IpAddr::from(*v4.dst.ip())),
+            Self::TCP(TCP::V6(v6)) => Key::TCP(v6.src.into(), IpAddr::from(*v6.dst.ip())),
+            Self::UDP(UDP::V4(v4)) => Key::UDP(v4.src.into(), IpAddr::from(*v4.dst.ip())),
+            Self::UDP(UDP::V6(v6)) => Key::UDP(v6.src.into(), IpAddr::from(*v6.dst.ip())),
         }
     }
 
@@ -112,10 +114,10 @@ impl Probe {
         match self {
             Self::ICMP(ICMP::V4(v4)) => v4.increment(),
             Self::ICMP(ICMP::V6(v6)) => v6.increment(),
-            Self::TCP(TCP::V4(v4))   => v4.increment(),
-            Self::TCP(TCP::V6(v6))   => v6.increment(),
-            Self::UDP(UDP::V4(v4))   => v4.increment(),
-            Self::UDP(UDP::V6(v6))   => v6.increment(),
+            Self::TCP(TCP::V4(v4)) => v4.increment(),
+            Self::TCP(TCP::V6(v6)) => v6.increment(),
+            Self::UDP(UDP::V4(v4)) => v4.increment(),
+            Self::UDP(UDP::V6(v6)) => v6.increment(),
         }
     }
 }
@@ -123,26 +125,41 @@ impl Probe {
 impl Probes {
     pub fn new(proto: Protocol, src: IpAddr, dst: IpAddr, value: u16) -> Self {
         let src = match proto {
-            Protocol::ICMP    => SocketAddr::new(src, 0),
+            Protocol::ICMP => SocketAddr::new(src, 0),
             Protocol::TCP(..) => SocketAddr::new(src, value),
             Protocol::UDP(..) => SocketAddr::new(src, value),
         };
-        Self { proto, src, dst, value }
+        Self {
+            proto,
+            src,
+            dst,
+            value,
+        }
     }
 
     pub fn key(&self) -> Key {
-        let Self { proto, src, dst, value } = *self;
+        let Self {
+            proto,
+            src,
+            dst,
+            value,
+        } = *self;
         match proto {
-            Protocol::ICMP    => Key::ICMP(src.ip(), dst, value),
+            Protocol::ICMP => Key::ICMP(src.ip(), dst, value),
             Protocol::TCP(..) => Key::TCP(src, dst),
             Protocol::UDP(..) => Key::UDP(src, dst),
         }
     }
 
     pub fn probe(&self) -> Result<Probe> {
-        let Self { proto, src, dst, value } = *self;
+        let Self {
+            proto,
+            src,
+            dst,
+            value,
+        } = *self;
         Ok(match proto {
-            Protocol::ICMP      => Probe::ICMP(ICMP::try_from((src, dst, value))?),
+            Protocol::ICMP => Probe::ICMP(ICMP::try_from((src, dst, value))?),
             Protocol::TCP(port) => Probe::TCP(TCP::try_from((src, dst, port))?),
             Protocol::UDP(port) => Probe::UDP(UDP::try_from((src, dst, port))?),
         })
@@ -196,9 +213,13 @@ impl TryFrom<(SocketAddr, IpAddr, u16)> for ICMP {
 
     fn try_from((src, dst, id): (SocketAddr, IpAddr, u16)) -> Result<Self, Self::Error> {
         match (src, dst) {
-            (SocketAddr::V4(src), IpAddr::V4(dst)) => Ok(ICMP::V4(ICMPv4::new(*src.ip(), dst, id, 0))),
-            (SocketAddr::V6(src), IpAddr::V6(dst)) => Ok(ICMP::V6(ICMPv6::new(*src.ip(), dst, id, 0))),
-            _                                      => Err(invalid()),
+            (SocketAddr::V4(src), IpAddr::V4(dst)) => {
+                Ok(ICMP::V4(ICMPv4::new(*src.ip(), dst, id, 0)))
+            }
+            (SocketAddr::V6(src), IpAddr::V6(dst)) => {
+                Ok(ICMP::V6(ICMPv6::new(*src.ip(), dst, id, 0)))
+            }
+            _ => Err(invalid()),
         }
     }
 }
@@ -210,7 +231,7 @@ impl TryFrom<(SocketAddr, IpAddr, u16)> for TCP {
         match (src, dst) {
             (SocketAddr::V4(src), IpAddr::V4(dst)) => Ok(TCP::V4(TCPv4::new(src, sa4(dst, port)))),
             (SocketAddr::V6(src), IpAddr::V6(dst)) => Ok(TCP::V6(TCPv6::new(src, sa6(dst, port)))),
-            _                                      => Err(invalid()),
+            _ => Err(invalid()),
         }
     }
 }
@@ -222,7 +243,7 @@ impl TryFrom<(SocketAddr, IpAddr, u16)> for UDP {
         match (src, dst) {
             (SocketAddr::V4(src), IpAddr::V4(dst)) => Ok(UDP::V4(UDPv4::new(src, sa4(dst, port)))),
             (SocketAddr::V6(src), IpAddr::V6(dst)) => Ok(UDP::V6(UDPv6::new(src, sa6(dst, port)))),
-            _                                      => Err(invalid()),
+            _ => Err(invalid()),
         }
     }
 }
@@ -239,7 +260,7 @@ fn invalid() -> Error {
     anyhow!("mixed IPv4 and IPv6 addresses")
 }
 
-const ICMP4: u8 = IpNumber::Icmp     as u8;
+const ICMP4: u8 = IpNumber::Icmp as u8;
 const ICMP6: u8 = IpNumber::IPv6Icmp as u8;
-const TCP:   u8 = IpNumber::Tcp      as u8;
-const UDP:   u8 = IpNumber::Udp      as u8;
+const TCP: u8 = IpNumber::Tcp as u8;
+const UDP: u8 = IpNumber::Udp as u8;
