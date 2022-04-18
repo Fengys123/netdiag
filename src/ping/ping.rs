@@ -54,6 +54,17 @@ impl Pinger {
         .take(count)
     }
 
+    pub async fn ping_once(
+        &self,
+        addr: IpAddr,
+        expiry: Duration,
+        seq: u16,
+    ) -> Result<Option<Duration>> {
+        let ident = random();
+        let probe = Probe::new(addr, ident, seq);
+        Ok(self.probe(&probe, expiry).await?)
+    }
+
     async fn probe(&self, probe: &Probe, expiry: Duration) -> Result<Option<Duration>> {
         let rx = self.state.insert(probe.token);
         let sent = self.send(probe).await?;
