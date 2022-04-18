@@ -4,7 +4,6 @@ use crate::icmp::icmp4::checksum;
 use crate::icmp::IcmpV4Packet;
 use crate::Bind;
 use anyhow::Result;
-use etherparse::{IpNumber, Ipv4Header};
 use log::{debug, error};
 use raw_socket::tokio::RawSocket;
 use raw_socket::{Domain, Protocol, Type};
@@ -57,6 +56,7 @@ impl Sock4 {
     }
 }
 
+#[cfg(not(any(ios, mac)))]
 async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
     let mut pkt = [0u8; 128];
     loop {
@@ -72,8 +72,10 @@ async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
     }
 }
 
-#[allow(dead_code)]
-async fn recv_with_ip_header(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
+#[cfg(any(ios, mac))]
+async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
+    use etherparse::{IpNumber, Ipv4Header};
+    const ICMP4: u8 = IpNumber::Icmp as u8;
     let mut pkt = [0u8; 128];
     loop {
         let (n, _) = sock.recv_from(&mut pkt).await?;
@@ -102,5 +104,3 @@ impl Drop for Sock4 {
         self.recv.abort();
     }
 }
-
-const ICMP4: u8 = IpNumber::Icmp as u8;
