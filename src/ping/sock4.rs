@@ -56,7 +56,7 @@ impl Sock4 {
     }
 }
 
-#[cfg(not(any(ios, macos)))]
+#[cfg(not(any(target_os = "ios", target_os = "macos")))]
 async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
     let mut pkt = [0u8; 128];
     loop {
@@ -72,7 +72,7 @@ async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
     }
 }
 
-#[cfg(any(ios, macos))]
+#[cfg(any(target_os = "ios", target_os = "macos"))]
 async fn recv(sock: Arc<RawSocket>, state: Arc<State>) -> Result<()> {
     use etherparse::{IpNumber, Ipv4Header};
     const ICMP4: u8 = IpNumber::Icmp as u8;
