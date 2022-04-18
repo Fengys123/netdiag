@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use futures::{pin_mut, stream::StreamExt};
 use gumdrop::Options;
-use netdiag::{Bind, Ping, Pinger};
+use netdiag2::{Bind, Ping, Pinger};
 use std::time::Duration;
 use tokio::net::lookup_host;
 use tokio::time::sleep;

@@ -62,7 +62,7 @@ impl Pinger {
     ) -> Result<Option<Duration>> {
         let ident = random();
         let probe = Probe::new(addr, ident, seq);
-        Ok(self.probe(&probe, expiry).await?)
+        self.probe(&probe, expiry).await
     }
 
     async fn probe(&self, probe: &Probe, expiry: Duration) -> Result<Option<Duration>> {

@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use futures::{pin_mut, StreamExt};
 use gumdrop::Options;
-use netdiag::{trace::Node, Bind, Protocol, Tracer};
+use netdiag2::{trace::Node, Bind, Protocol, Tracer};
 use std::collections::HashMap;
 use std::net::IpAddr;
 use std::time::Duration;
